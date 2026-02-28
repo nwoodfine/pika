@@ -16,6 +16,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var preferencesWindow: NSWindow!
     var eyedroppers: Eyedroppers!
     var colorHistoryManager = ColorHistoryManager()
+    var paletteSyncManager = PaletteSyncManager()
 
     var undoManager = UndoManager()
 

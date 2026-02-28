@@ -59,6 +59,7 @@ struct ContentView: View {
             Divider()
             Footer(foreground: eyedroppers.foreground, background: eyedroppers.background)
             ColorHistory()
+            ColorPalettes()
         }
         .onAppear {
             if !eyedroppers.hasSetInitialBackground {
@@ -92,19 +93,33 @@ struct ContentView: View {
 struct PopoverContentView: View {
     @EnvironmentObject var eyedroppers: Eyedroppers
     @Default(.colorHistory) var colorHistory
+    @Default(.paletteText) var paletteText
+
+    var popoverHeight: CGFloat {
+        var height: CGFloat = 284
+        if !colorHistory.isEmpty {
+            height += 52
+        }
+        let paletteCount = PaletteParser.parse(paletteText)
+            .filter { !$0.colors.isEmpty }.count
+        if paletteCount > 0 {
+            height += CGFloat(paletteCount) * 38 + 6
+        }
+        return min(height, 550)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                NavigationMenu()
                 Spacer()
+                NavigationMenu()
             }
-            .padding(.horizontal, 10)
+            .padding(.leading, 10)
             .padding(.vertical, 10)
             ContentView()
                 .environmentObject(eyedroppers)
         }
-        .frame(width: 480, height: colorHistory.isEmpty ? 284 : 330)
+        .frame(width: 480, height: popoverHeight)
     }
 }
 
