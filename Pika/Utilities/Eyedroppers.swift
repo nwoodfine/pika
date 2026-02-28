@@ -36,13 +36,6 @@ class Eyedropper: ObservableObject {
             case .background: return #selector(AppDelegate.triggerPickBackground)
             }
         }
-
-        var systemPickerSelector: Selector {
-            switch self {
-            case .foreground: return #selector(AppDelegate.triggerSystemPickerForeground)
-            case .background: return #selector(AppDelegate.triggerSystemPickerBackground)
-            }
-        }
     }
 
     /// Tracks which eyedropper currently owns the shared NSColorPanel.

@@ -80,3 +80,22 @@ struct SwatchBar: View {
         }
     }
 }
+
+/// Shared styling for swatch sections (color history and palette bars).
+struct SwatchSectionStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(.top, 10.0)
+            .padding(.bottom, 12.0)
+            .background(VisualEffect(
+                material: NSVisualEffectView.Material.underWindowBackground,
+                blendingMode: NSVisualEffectView.BlendingMode.behindWindow
+            ))
+    }
+}
+
+extension View {
+    func swatchSectionStyle() -> some View {
+        modifier(SwatchSectionStyle())
+    }
+}

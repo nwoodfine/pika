@@ -98,32 +98,33 @@ struct ContentView: View {
     }
 }
 
+/// Shared layout constants for dynamic height calculation.
+/// Used by both PopoverContentView and AppDelegate.updateWindowSize().
+enum SwatchLayout {
+    /// Height of a single swatch section (Divider + SwatchBar + padding).
+    static let swatchSectionHeight: CGFloat = 52
+    static let maxHeight: CGFloat = 550
+}
+
 struct PopoverContentView: View {
     @EnvironmentObject var eyedroppers: Eyedroppers
     @Default(.colorHistory) var colorHistory
     @Default(.paletteText) var paletteText
 
     /// MenuBarExtra .window style requires an explicit frame — no intrinsic sizing.
-    /// These values are measured to match the content at each configuration.
-    private enum Layout {
-        static let baseHeight: CGFloat = 284
-        /// Height of a single swatch section (Divider + SwatchBar + padding).
-        /// Shared by both color history and palette bars since the structure is identical.
-        static let swatchSectionHeight: CGFloat = 52
-        static let maxPopoverHeight: CGFloat = 550
-    }
+    private static let popoverBaseHeight: CGFloat = 284
 
     private var palettes: [ColorPalette] {
         PaletteParser.parse(paletteText)
     }
 
     private func popoverHeight(paletteCount: Int) -> CGFloat {
-        var height = Layout.baseHeight
+        var height = Self.popoverBaseHeight
         if !colorHistory.isEmpty {
-            height += Layout.swatchSectionHeight
+            height += SwatchLayout.swatchSectionHeight
         }
-        height += CGFloat(paletteCount) * Layout.swatchSectionHeight
-        return min(height, Layout.maxPopoverHeight)
+        height += CGFloat(paletteCount) * SwatchLayout.swatchSectionHeight
+        return min(height, SwatchLayout.maxHeight)
     }
 
     var body: some View {

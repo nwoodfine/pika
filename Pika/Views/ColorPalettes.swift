@@ -9,12 +9,7 @@ struct ColorPalettes: View {
             Divider()
             ColorPaletteBar(palette: palette)
                 .environmentObject(eyedroppers)
-                .padding(.top, 10.0)
-                .padding(.bottom, 12.0)
-                .background(VisualEffect(
-                    material: NSVisualEffectView.Material.underWindowBackground,
-                    blendingMode: NSVisualEffectView.BlendingMode.behindWindow
-                ))
+                .swatchSectionStyle()
         }
     }
 }

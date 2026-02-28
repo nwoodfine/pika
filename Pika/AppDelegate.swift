@@ -79,18 +79,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Mirrors PopoverContentView.Layout — keeps window and popover heights in sync.
     private func idealWindowContentHeight() -> CGFloat {
         let baseHeight: CGFloat = 230
-        let swatchSectionHeight: CGFloat = 52
-        let maxHeight: CGFloat = 550
 
         var height = baseHeight
         if hadColorHistory {
-            height += swatchSectionHeight
+            height += SwatchLayout.swatchSectionHeight
         }
-        height += CGFloat(cachedPaletteCount) * swatchSectionHeight
-        return min(height, maxHeight)
+        height += CGFloat(cachedPaletteCount) * SwatchLayout.swatchSectionHeight
+        return min(height, SwatchLayout.maxHeight)
     }
 
     func updateWindowSize(animate: Bool) {
