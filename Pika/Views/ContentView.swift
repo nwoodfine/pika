@@ -44,11 +44,6 @@ struct ContentView: View {
                         alt: PikaText.textColorSwap,
                         ltr: true
                     ))
-                    .onReceive(NotificationCenter.default.publisher(
-                        for: Notification.Name(PikaConstants.ncTriggerSwap)))
-                    { _ in
-                        swap(&eyedroppers.foreground.color, &eyedroppers.background.color)
-                    }
                     .focusable(false)
                     .padding(16.0)
                     .frame(maxHeight: .infinity, alignment: .top)
@@ -65,9 +60,12 @@ struct ContentView: View {
             Footer(foreground: eyedroppers.foreground, background: eyedroppers.background)
         }
         .onAppear {
-            eyedroppers.background.color = colorScheme == .light
-                ? NSColor.white
-                : NSColor.black
+            if !eyedroppers.hasSetInitialBackground {
+                eyedroppers.hasSetInitialBackground = true
+                eyedroppers.background.color = colorScheme == .light
+                    ? NSColor.white
+                    : NSColor.black
+            }
         }
         .onReceive(NotificationCenter.default.publisher(
             for: Notification.Name(PikaConstants.ncTriggerCopyText)))
@@ -100,11 +98,11 @@ struct PopoverContentView: View {
                 Spacer()
             }
             .padding(.horizontal, 10)
-            .padding(.top, 8)
+            .padding(.vertical, 10)
             ContentView()
                 .environmentObject(eyedroppers)
         }
-        .frame(width: 480, height: 280)
+        .frame(width: 480, height: 284)
     }
 }
 
