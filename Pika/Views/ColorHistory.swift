@@ -11,7 +11,7 @@ struct ColorHistory: View {
             Divider()
             SwatchBar(
                 title: PikaText.textColorHistory,
-                swatches: colors.map { Swatch(id: $0, hex: $0, hoverText: $0) },
+                swatches: colors.map { Swatch(id: $0, color: NSColor(hex: $0), hex: $0, name: nil) },
                 onTap: { swatch in
                     // Don't re-record: just promote the existing entry and apply it.
                     eyedroppers.foreground.set(
