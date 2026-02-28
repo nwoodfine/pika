@@ -14,6 +14,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var statusBarItem: NSStatusItem!
     var statusBarMenu: NSMenu!
     var pikaWindow: NSWindow!
+    var popover: NSPopover!
     var splashWindow: NSWindow!
     var aboutWindow: NSWindow!
     var preferencesWindow: NSWindow!
@@ -26,6 +27,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var aboutTouchBarController: SplashTouchBarController!
 
     let notificationCenter = NotificationCenter.default
+
+    var isMenubarMode: Bool {
+        Defaults[.appMode] == .menubar
+    }
 
     func setupAppMode() {
         var currentMode = Defaults[.appMode] == .regular
@@ -118,6 +123,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         pikaWindow = PikaWindow.createPrimaryWindow()
         pikaWindow.contentView = NSHostingView(rootView: contentView)
         pikaTouchBarController = PikaTouchBarController(window: pikaWindow)
+
+        // Set up popover for menubar mode
+        let popoverContentView = PopoverContentView()
+            .environmentObject(eyedroppers)
+        popover = NSPopover()
+        popover.contentSize = NSSize(width: 480, height: 280)
+        popover.behavior = .transient
+        popover.contentViewController = NSHostingController(rootView: popoverContentView)
 
         // Define global keyboard shortcuts
         KeyboardShortcuts.onKeyUp(for: .togglePika) { [] in
@@ -235,18 +248,36 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // swiftlint:enable cyclomatic_complexity
 
     func startMainWindow() {
-        if !pikaWindow.isVisible {
-            pikaWindow.fadeIn(nil)
+        if !isMenubarMode {
+            if !pikaWindow.isVisible {
+                pikaWindow.fadeIn(nil)
+            }
         }
         Defaults[.viewedSplash] = true
     }
 
     func showMainWindow() {
-        pikaWindow.makeKeyAndOrderFront(nil)
+        if isMenubarMode {
+            showPopover()
+        } else {
+            pikaWindow.makeKeyAndOrderFront(nil)
+        }
     }
 
     func hideMainWindow() {
-        pikaWindow.orderOut(nil)
+        if isMenubarMode {
+            popover.performClose(nil)
+        } else {
+            pikaWindow.orderOut(nil)
+        }
+    }
+
+    private func showPopover() {
+        guard let button = statusBarItem.button else { return }
+        if !popover.isShown {
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            popover.contentViewController?.view.window?.makeKey()
+        }
     }
 
     @objc func closeSplashWindow() {
@@ -307,11 +338,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc func togglePopover(_: AnyObject?) {
-        if pikaWindow.isVisible {
-            hideMainWindow()
+        if isMenubarMode {
+            if popover.isShown {
+                popover.performClose(nil)
+            } else {
+                showPopover()
+            }
         } else {
-            showMainWindow()
-            NSApp.activate(ignoringOtherApps: true)
+            if pikaWindow.isVisible {
+                hideMainWindow()
+            } else {
+                showMainWindow()
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
     }
 
@@ -447,12 +486,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @IBAction func showPika(_: Any) {
-        if pikaWindow.isVisible {
-            pikaWindow.makeKeyAndOrderFront(self)
+        if isMenubarMode {
+            showPopover()
+            NSApp.activate(ignoringOtherApps: true)
         } else {
-            pikaWindow.fadeIn(sender: nil, duration: 0.2)
+            if pikaWindow.isVisible {
+                pikaWindow.makeKeyAndOrderFront(self)
+            } else {
+                pikaWindow.fadeIn(sender: nil, duration: 0.2)
+            }
+            NSApp.activate(ignoringOtherApps: true)
         }
-        NSApp.activate(ignoringOtherApps: true)
     }
 
     #if TARGET_SPARKLE

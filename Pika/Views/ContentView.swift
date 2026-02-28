@@ -90,6 +90,24 @@ struct ContentView: View {
     }
 }
 
+struct PopoverContentView: View {
+    @EnvironmentObject var eyedroppers: Eyedroppers
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                NavigationMenu()
+                Spacer()
+            }
+            .padding(.horizontal, 10)
+            .padding(.top, 8)
+            ContentView()
+                .environmentObject(eyedroppers)
+        }
+        .frame(width: 480, height: 280)
+    }
+}
+
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
