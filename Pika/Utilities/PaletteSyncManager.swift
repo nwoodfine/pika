@@ -2,9 +2,17 @@ import Cocoa
 import Defaults
 import Security
 
+/// Keeps paletteText in sync between local Defaults and iCloud KVS.
+/// Degrades gracefully to local-only when the KVS entitlement is absent (e.g. dev builds).
 class PaletteSyncManager {
     private var store: NSUbiquitousKeyValueStore?
     private let key = "paletteText"
+
+    /// Token to break the cloud→Defaults→cloud feedback loop.
+    /// Set before writing a cloud value into Defaults; consumed by the Defaults observer
+    /// so it knows to skip pushing that same value back to iCloud.
+    /// Only set when the cloud value actually differs from Defaults — otherwise KVO
+    /// won't fire and the token would go stale, suppressing a future legitimate edit.
     private var lastCloudAppliedValue: String?
 
     private static var hasKVSEntitlement: Bool {
@@ -45,6 +53,7 @@ class PaletteSyncManager {
         }.tieToLifetime(of: self)
     }
 
+    /// Handles iCloud KVS external change notifications (server sync, initial sync, account change).
     @objc private func cloudDidChange(_ notification: Notification) {
         guard let store = store,
               let userInfo = notification.userInfo,

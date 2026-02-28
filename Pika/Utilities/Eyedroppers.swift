@@ -45,10 +45,13 @@ class Eyedropper: ObservableObject {
         }
     }
 
+    /// Tracks which eyedropper currently owns the shared NSColorPanel.
+    /// Used by togglePicker() to know whether to open or close the panel.
     private static var activePickerType: Types?
 
     let type: Types
     var forceShow = false
+    /// Injected from AppDelegate; weak to avoid a retain cycle (AppDelegate owns both).
     weak var colorHistoryManager: ColorHistoryManager?
 
     let colorNames: [ColorName] = loadColors()!
@@ -75,6 +78,8 @@ class Eyedropper: ObservableObject {
         colorNames[closestVector.compare(color)].name
     }
 
+    /// Pass `recordToHistory: false` when setting from a history/palette tap
+    /// to avoid re-recording a color the user selected from an existing list.
     func set(_ selectedColor: NSColor, recordToHistory: Bool = true) {
         let previousColor = color
         undoManager?.registerUndo(withTarget: self) { _ in

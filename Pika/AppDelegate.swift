@@ -16,6 +16,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var preferencesWindow: NSWindow!
     var eyedroppers: Eyedroppers!
     let colorHistoryManager = ColorHistoryManager()
+    /// Retained for the app's lifetime to keep the iCloud KVS observer alive.
     let paletteSyncManager = PaletteSyncManager()
 
     var undoManager = UndoManager()

@@ -11,6 +11,8 @@ struct ColorPalette: Identifiable, Equatable {
     let colors: [PaletteColor]
 }
 
+/// Parses palette text format: `[Name]` header followed by comma-separated hex colors
+/// with optional `(label)` names. Example: `#FF6B35(Tangerine), #FFD700`
 enum PaletteParser {
     static func normalizeHex(_ input: String) -> String? {
         var hex = input.trimmingCharacters(in: .whitespaces)
@@ -46,6 +48,8 @@ enum PaletteParser {
         return PaletteColor(hex: hex, name: name)
     }
 
+    /// Walks palette text line-by-line, yielding each `[Name]` + colors-line pair.
+    /// Handler returns `true` to stop early (used by parse() to cap at 5 palettes).
     private static func enumerateSections(
         _ text: String,
         handler: (_ name: String, _ colorsLine: String) -> Bool

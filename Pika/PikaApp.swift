@@ -8,6 +8,8 @@ struct PikaApp: App {
     @Default(.hideMenuBarIcon) private var hideMenuBarIcon
 
     var body: some Scene {
+        // Read-only binding: visibility is purely derived from preferences.
+        // The no-op setter prevents SwiftUI from toggling it independently.
         MenuBarExtra(isInserted: Binding(
             get: { appMode == .menubar && !hideMenuBarIcon },
             set: { _ in }

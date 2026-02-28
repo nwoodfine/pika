@@ -1,6 +1,8 @@
 import Defaults
 import SwiftUI
 
+/// Wraps NSTextView because SwiftUI's TextEditor lacks control over autocorrect,
+/// smart quotes, and text container insets on macOS.
 struct PaletteTextView: NSViewRepresentable {
     @Binding var text: String
     var onTextChange: (() -> Void)?
@@ -99,6 +101,7 @@ struct PaletteEditor: View {
         }
     }
 
+    /// Debounces validation + "Saved" feedback so it doesn't flash on every keystroke.
     private func triggerSaveStatus() {
         debounceWorkItem?.cancel()
         let work = DispatchWorkItem {

@@ -6,6 +6,8 @@ struct Swatch: Identifiable, Equatable {
     let hoverText: String
 }
 
+/// Shared component for color history and palette bars: equal-width colored rectangles
+/// with hover text and a tap callback. Uses GeometryReader to divide available width evenly.
 struct SwatchBar: View {
     let title: String
     let swatches: [Swatch]

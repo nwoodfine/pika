@@ -11,6 +11,7 @@ struct ContentView: View {
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     let pasteboard = NSPasteboard.general
 
+    /// When provided (popover path), avoids re-parsing paletteText that PopoverContentView already parsed.
     var externalPalettes: [ColorPalette]?
 
     @State var swapVisible: Bool = false
@@ -102,6 +103,8 @@ struct PopoverContentView: View {
     @Default(.colorHistory) var colorHistory
     @Default(.paletteText) var paletteText
 
+    /// MenuBarExtra .window style requires an explicit frame — no intrinsic sizing.
+    /// These values are measured to match the content at each configuration.
     private enum Layout {
         static let baseHeight: CGFloat = 284
         static let historyBarHeight: CGFloat = 52
