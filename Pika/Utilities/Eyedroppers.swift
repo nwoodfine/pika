@@ -130,7 +130,7 @@ class Eyedropper: ObservableObject {
     }
 
     func start() {
-        let isMenubarMode = Defaults[.appMode] == .menubar
+        let isMenubarMode = Defaults[.appMode] == .menubar && !Defaults[.openAsWindow]
 
         if !isMenubarMode, Defaults[.hidePikaWhilePicking] {
             if NSApp.mainWindow?.isVisible == true {

@@ -23,19 +23,6 @@ struct ColorPalette: Identifiable, Equatable {
 /// with optional `(label)` names. Supports all color formats: hex, rgb(), hsl(),
 /// hsb(), lab(), oklch(), rgba(). Example: `#FF6B35(Tangerine), oklch(80% 0.15 90)`
 enum PaletteParser {
-    static func normalizeHex(_ input: String) -> String? {
-        var hex = input.trimmingCharacters(in: .whitespaces)
-        if hex.hasPrefix("#") {
-            hex = String(hex.dropFirst())
-        }
-        guard hex.allSatisfy(\.isHexDigit) else { return nil }
-        if hex.count == 3 {
-            hex = hex.map { "\($0)\($0)" }.joined()
-        }
-        guard hex.count == 6 else { return nil }
-        return "#\(hex.lowercased())"
-    }
-
     /// Splits a color line on commas that are outside parentheses, so that
     /// values like `rgb(255, 0, 0)` are kept intact.
     static func splitColorEntries(_ line: String) -> [String] {

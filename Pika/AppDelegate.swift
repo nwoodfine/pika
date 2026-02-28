@@ -21,6 +21,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     var undoManager = UndoManager()
     var statusItem: NSStatusItem?
+    private var cachedPaletteCount = 0
+    private var hadColorHistory = false
 
     override init() {
         super.init()
@@ -84,11 +86,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let maxHeight: CGFloat = 550
 
         var height = baseHeight
-        if !Defaults[.colorHistory].isEmpty {
+        if hadColorHistory {
             height += swatchSectionHeight
         }
-        let palettes = PaletteParser.parse(Defaults[.paletteText])
-        height += CGFloat(palettes.count) * swatchSectionHeight
+        height += CGFloat(cachedPaletteCount) * swatchSectionHeight
         return min(height, maxHeight)
     }
 
@@ -186,14 +187,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         pikaWindow.contentView = NSHostingView(rootView: contentView)
         pikaTouchBarController = PikaTouchBarController(window: pikaWindow)
 
+        cachedPaletteCount = PaletteParser.parse(Defaults[.paletteText]).count
+        hadColorHistory = !Defaults[.colorHistory].isEmpty
         updateWindowSize(animate: false)
 
         Defaults.observe(.paletteText) { [weak self] _ in
-            DispatchQueue.main.async { self?.updateWindowSize(animate: true) }
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.cachedPaletteCount = PaletteParser.parse(Defaults[.paletteText]).count
+                self.updateWindowSize(animate: true)
+            }
         }.tieToLifetime(of: self)
 
         Defaults.observe(.colorHistory) { [weak self] _ in
-            DispatchQueue.main.async { self?.updateWindowSize(animate: true) }
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                let hasHistory = !Defaults[.colorHistory].isEmpty
+                guard hasHistory != self.hadColorHistory else { return }
+                self.hadColorHistory = hasHistory
+                self.updateWindowSize(animate: true)
+            }
         }.tieToLifetime(of: self)
 
         // Define global keyboard shortcuts
