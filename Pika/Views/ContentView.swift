@@ -58,6 +58,7 @@ struct ContentView: View {
 
             Divider()
             Footer(foreground: eyedroppers.foreground, background: eyedroppers.background)
+            ColorHistory()
         }
         .onAppear {
             if !eyedroppers.hasSetInitialBackground {
@@ -90,6 +91,7 @@ struct ContentView: View {
 
 struct PopoverContentView: View {
     @EnvironmentObject var eyedroppers: Eyedroppers
+    @Default(.colorHistory) var colorHistory
 
     var body: some View {
         VStack(spacing: 0) {
@@ -102,7 +104,7 @@ struct PopoverContentView: View {
             ContentView()
                 .environmentObject(eyedroppers)
         }
-        .frame(width: 480, height: 284)
+        .frame(width: 480, height: colorHistory.isEmpty ? 284 : 330)
     }
 }
 

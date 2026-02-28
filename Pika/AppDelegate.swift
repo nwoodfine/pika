@@ -7,20 +7,26 @@ import SwiftUI
     import Sparkle
 #endif
 
-@main
 // swiftlint:disable type_body_length
 // swiftlint:disable file_length
-class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
-    var statusBarItem: NSStatusItem!
-    var statusBarMenu: NSMenu!
+class AppDelegate: NSObject, NSApplicationDelegate {
     var pikaWindow: NSWindow!
-    var popover: NSPopover!
     var splashWindow: NSWindow!
     var aboutWindow: NSWindow!
     var preferencesWindow: NSWindow!
     var eyedroppers: Eyedroppers!
+    var colorHistoryManager = ColorHistoryManager()
 
     var undoManager = UndoManager()
+
+    override init() {
+        super.init()
+        eyedroppers = Eyedroppers()
+        eyedroppers.foreground.undoManager = undoManager
+        eyedroppers.background.undoManager = undoManager
+        eyedroppers.foreground.colorHistoryManager = colorHistoryManager
+        eyedroppers.background.colorHistoryManager = colorHistoryManager
+    }
 
     var pikaTouchBarController: PikaTouchBarController!
     var splashTouchBarController: SplashTouchBarController!
@@ -58,27 +64,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                         }
                     }
                 }
-                self.statusBarItem.isVisible = Defaults[.hideMenuBarIcon] == false && change.newValue == .menubar
             }
-        }.tieToLifetime(of: self)
-    }
-
-    func setupStatusBar() {
-        // Set up status bar and menu
-        let statusBar = NSStatusBar.system
-        statusBarItem = statusBar.statusItem(withLength: CGFloat(NSStatusItem.variableLength))
-
-        if let button = statusBarItem.button {
-            button.image = NSImage(named: "StatusBarIcon")
-            button.action = #selector(statusBarClicked(sender:))
-            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-        }
-
-        statusBarMenu = getStatusBarMenu()
-
-        statusBarItem.isVisible = Defaults[.hideMenuBarIcon] == false && Defaults[.appMode] == .menubar
-        Defaults.observe(.hideMenuBarIcon) { change in
-            self.statusBarItem.isVisible = change.newValue == false && Defaults[.appMode] == .menubar
         }.tieToLifetime(of: self)
     }
 
@@ -102,12 +88,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         #endif
 
         setupAppMode()
-        setupStatusBar()
-
-        // Set up eyedroppers
-        eyedroppers = Eyedroppers()
-        eyedroppers.foreground.undoManager = undoManager
-        eyedroppers.background.undoManager = undoManager
 
         // Define content view
         let contentView = ContentView()
@@ -117,20 +97,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                    maxWidth: 650,
                    minHeight: 230,
                    idealHeight: 230,
-                   maxHeight: 400,
+                   maxHeight: 446,
                    alignment: .center)
 
         pikaWindow = PikaWindow.createPrimaryWindow()
         pikaWindow.contentView = NSHostingView(rootView: contentView)
         pikaTouchBarController = PikaTouchBarController(window: pikaWindow)
-
-        // Set up popover for menubar mode
-        let popoverContentView = PopoverContentView()
-            .environmentObject(eyedroppers)
-        popover = NSPopover()
-        popover.contentSize = NSSize(width: 480, height: 280)
-        popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: popoverContentView)
 
         // Define global keyboard shortcuts
         KeyboardShortcuts.onKeyUp(for: .togglePika) { [] in
@@ -156,8 +128,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows: Bool) -> Bool {
-        if !hasVisibleWindows {
-            pikaWindow.makeKeyAndOrderFront(self)
+        if !hasVisibleWindows, !isMenubarMode {
+            pikaWindow?.makeKeyAndOrderFront(self)
         }
         return true
     }
@@ -257,101 +229,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func showMainWindow() {
-        if isMenubarMode {
-            showPopover()
-        } else {
+        if !isMenubarMode {
             pikaWindow.makeKeyAndOrderFront(nil)
         }
     }
 
     func hideMainWindow() {
-        if isMenubarMode {
-            popover.performClose(nil)
-        } else {
+        if !isMenubarMode {
             pikaWindow.orderOut(nil)
-        }
-    }
-
-    private func showPopover() {
-        guard let button = statusBarItem.button else { return }
-        if !popover.isShown {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            popover.contentViewController?.view.window?.makeKey()
         }
     }
 
     @objc func closeSplashWindow() {
         splashWindow.fadeOut(sender: nil, duration: 0.25, closeSelector: .close, completionHandler: startMainWindow)
-    }
-
-    func getStatusBarMenu() -> NSMenu {
-        statusBarMenu = NSMenu(title: "Status Bar Menu")
-        statusBarMenu.delegate = self
-        statusBarMenu.addItem(
-            withTitle: PikaText.textMenuAbout,
-            action: #selector(openAboutWindow(_:)),
-            keyEquivalent: ""
-        )
-
-        statusBarMenu.addItem(
-            withTitle: "\(PikaText.textMenuUpdates)...",
-            action: #selector(checkForUpdates(_:)),
-            keyEquivalent: ""
-        )
-
-        statusBarMenu.addItem(
-            withTitle: PikaText.textMenuGitHubIssue,
-            action: #selector(openGitHubIssue(_:)),
-            keyEquivalent: ""
-        )
-
-        let preferences = NSMenuItem(
-            title: "\(PikaText.textMenuPreferences)...",
-            action: #selector(openPreferencesWindow(_:)),
-            keyEquivalent: ","
-        )
-        preferences.keyEquivalentModifierMask = NSEvent.ModifierFlags.command
-        statusBarMenu.addItem(preferences)
-
-        statusBarMenu.addItem(NSMenuItem.separator())
-        statusBarMenu.addItem(
-            withTitle: PikaText.textMenuQuit,
-            action: #selector(terminatePika(_:)),
-            keyEquivalent: ""
-        )
-
-        return statusBarMenu
-    }
-
-    @objc func statusBarClicked(sender _: NSStatusBarButton) {
-        let event = NSApp.currentEvent
-        if event != nil, event!.type == NSEvent.EventType.rightMouseUp || event!.modifierFlags.contains(.control) {
-            statusBarItem.menu = statusBarMenu
-            statusBarItem.button?.performClick(nil)
-        } else {
-            togglePopover(nil)
-        }
-    }
-
-    @objc func menuDidClose(_: NSMenu) {
-        statusBarItem.menu = nil
-    }
-
-    @objc func togglePopover(_: AnyObject?) {
-        if isMenubarMode {
-            if popover.isShown {
-                popover.performClose(nil)
-            } else {
-                showPopover()
-            }
-        } else {
-            if pikaWindow.isVisible {
-                hideMainWindow()
-            } else {
-                showMainWindow()
-                NSApp.activate(ignoringOtherApps: true)
-            }
-        }
     }
 
     @IBAction func openAboutWindow(_: Any?) {
@@ -424,14 +314,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @IBAction func triggerSystemPickerForeground(_: Any) {
+        toggleSystemPicker(eyedroppers.foreground)
         notificationCenter.post(name: Notification.Name(PikaConstants.ncTriggerSystemPickerForeground), object: self)
     }
 
     @IBAction func triggerSystemPickerBackground(_: Any) {
+        toggleSystemPicker(eyedroppers.background)
         notificationCenter.post(name: Notification.Name(PikaConstants.ncTriggerSystemPickerBackground), object: self)
     }
 
+    private func toggleSystemPicker(_ eyedropper: Eyedropper) {
+        let panel = NSColorPanel.shared
+        if panel.isVisible, panel.title == "\(eyedropper.type.rawValue.capitalized)" {
+            panel.close()
+        } else {
+            eyedropper.picker()
+        }
+    }
+
     @IBAction func triggerSwap(_: Any) {
+        swap(&eyedroppers.foreground.color, &eyedroppers.background.color)
         notificationCenter.post(name: Notification.Name(PikaConstants.ncTriggerSwap), object: self)
     }
 
@@ -486,10 +388,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @IBAction func showPika(_: Any) {
-        if isMenubarMode {
-            showPopover()
-            NSApp.activate(ignoringOtherApps: true)
-        } else {
+        if !isMenubarMode {
             if pikaWindow.isVisible {
                 pikaWindow.makeKeyAndOrderFront(self)
             } else {
