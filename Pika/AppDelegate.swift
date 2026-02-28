@@ -315,22 +315,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @IBAction func triggerSystemPickerForeground(_: Any) {
-        toggleSystemPicker(eyedroppers.foreground)
+        eyedroppers.foreground.togglePicker()
         notificationCenter.post(name: Notification.Name(PikaConstants.ncTriggerSystemPickerForeground), object: self)
     }
 
     @IBAction func triggerSystemPickerBackground(_: Any) {
-        toggleSystemPicker(eyedroppers.background)
+        eyedroppers.background.togglePicker()
         notificationCenter.post(name: Notification.Name(PikaConstants.ncTriggerSystemPickerBackground), object: self)
-    }
-
-    private func toggleSystemPicker(_ eyedropper: Eyedropper) {
-        let panel = NSColorPanel.shared
-        if panel.isVisible, panel.title == "\(eyedropper.type.rawValue.capitalized)" {
-            panel.close()
-        } else {
-            eyedropper.picker()
-        }
     }
 
     @IBAction func triggerSwap(_: Any) {

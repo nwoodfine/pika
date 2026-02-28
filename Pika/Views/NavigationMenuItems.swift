@@ -45,11 +45,11 @@ struct NavigationMenuItems: View {
             }
 
             Button(PikaText.textColorSystemPickerForeground, action: {
-                NSApp.sendAction(#selector(AppDelegate.triggerSystemPickerForeground), to: nil, from: nil)
+                (NSApp.delegate as? AppDelegate)?.eyedroppers.foreground.togglePicker()
             })
 
             Button(PikaText.textColorSystemPickerBackground, action: {
-                NSApp.sendAction(#selector(AppDelegate.triggerSystemPickerBackground), to: nil, from: nil)
+                (NSApp.delegate as? AppDelegate)?.eyedroppers.background.togglePicker()
             })
 
             VStack {

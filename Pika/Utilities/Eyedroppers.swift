@@ -111,6 +111,15 @@ class Eyedropper: ObservableObject {
         panel.isContinuous = true
     }
 
+    func togglePicker() {
+        let panel = NSColorPanel.shared
+        if panel.isVisible, panel.title == "\(type.rawValue.capitalized)" {
+            panel.close()
+        } else {
+            picker()
+        }
+    }
+
     func start() {
         let isMenubarMode = Defaults[.appMode] == .menubar
 
