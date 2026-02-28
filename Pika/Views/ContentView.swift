@@ -107,9 +107,9 @@ struct PopoverContentView: View {
     /// These values are measured to match the content at each configuration.
     private enum Layout {
         static let baseHeight: CGFloat = 284
-        static let historyBarHeight: CGFloat = 52
-        static let paletteRowHeight: CGFloat = 38
-        static let paletteGroupPadding: CGFloat = 6
+        /// Height of a single swatch section (Divider + SwatchBar + padding).
+        /// Shared by both color history and palette bars since the structure is identical.
+        static let swatchSectionHeight: CGFloat = 52
         static let maxPopoverHeight: CGFloat = 550
     }
 
@@ -120,11 +120,9 @@ struct PopoverContentView: View {
     private func popoverHeight(paletteCount: Int) -> CGFloat {
         var height = Layout.baseHeight
         if !colorHistory.isEmpty {
-            height += Layout.historyBarHeight
+            height += Layout.swatchSectionHeight
         }
-        if paletteCount > 0 {
-            height += CGFloat(paletteCount) * Layout.paletteRowHeight + Layout.paletteGroupPadding
-        }
+        height += CGFloat(paletteCount) * Layout.swatchSectionHeight
         return min(height, Layout.maxPopoverHeight)
     }
 

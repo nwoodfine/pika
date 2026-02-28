@@ -49,9 +49,10 @@ struct SwatchBar: View {
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 4.0))
+                // Keep hoveredSwatch set on exit so the text doesn't change width
+                // during the opacity fade-out (which would cause a visible slide).
                 .onHover { hovering in
                     isHoveringBar = hovering
-                    if !hovering { hoveredSwatch = nil }
                 }
             }
             .frame(height: 16)

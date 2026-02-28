@@ -86,8 +86,9 @@ enum PaletteParser {
                 .prefix(20)
 
             if !colors.isEmpty {
+                // Index prefix ensures unique IDs when multiple palettes share a name.
                 palettes.append(ColorPalette(
-                    id: name,
+                    id: "\(palettes.count):\(name)",
                     name: name,
                     colors: Array(colors)
                 ))

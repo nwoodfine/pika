@@ -55,7 +55,7 @@ struct PaletteEditor: View {
     @Environment(\.colorScheme) var colorScheme: ColorScheme
 
     // swiftlint:disable line_length
-    private let exampleText = "[Babel Fish]\n#FFD700, #FF6B35, #FFA500\n\n[Pan Galactic Gargle Blaster]\n#08F7FE(Zaphod), #FE53BB(Trillian), #F5D300(Ford), #09FBD3(Arthur)"
+    private let exampleText = "[Babel Fish]\n#FFD700, #FF6B35, #FFA500\n\n[Pan Galactic Gargle Blaster]\n#08F7FE(Zaphod), #FE53BB(Trillian), #F5D300(Ford)"
     // swiftlint:enable line_length
 
     var body: some View {
