@@ -1,12 +1,10 @@
-import Defaults
 import SwiftUI
 
 struct ColorPalettes: View {
-    @Default(.paletteText) var paletteText
+    let palettes: [ColorPalette]
     @EnvironmentObject var eyedroppers: Eyedroppers
 
     var body: some View {
-        let palettes = PaletteParser.parse(paletteText).filter { !$0.colors.isEmpty }
         if !palettes.isEmpty {
             Divider()
             VStack(alignment: .leading, spacing: 6.0) {

@@ -15,8 +15,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var aboutWindow: NSWindow!
     var preferencesWindow: NSWindow!
     var eyedroppers: Eyedroppers!
-    var colorHistoryManager = ColorHistoryManager()
-    var paletteSyncManager = PaletteSyncManager()
+    let colorHistoryManager = ColorHistoryManager()
+    let paletteSyncManager = PaletteSyncManager()
 
     var undoManager = UndoManager()
 
@@ -53,11 +53,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 NSApp.setActivationPolicy(newMode)
                 NSApp.activate(ignoringOtherApps: true)
                 if change.newValue == .regular {
-                    DispatchQueue.main.asyncAfter(deadline: .now()) {
+                    DispatchQueue.main.async {
                         NSApp.unhide(self)
 
                         if let window = NSApp.windows.first {
-                            // Verify window can become key before making it key and moving it to front
                             if window.canBecomeKey {
                                 window.makeKeyAndOrderFront(self)
                             }
@@ -143,25 +142,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // swiftlint:disable function_body_length
     @objc func handleGetURLEvent(_ event: NSAppleEventDescriptor, withReplyEvent _: NSAppleEventDescriptor) {
         if let urlString = event.forKeyword(AEKeyword(keyDirectObject))?.stringValue {
-            let url = URL(string: urlString)
-            guard url != nil, let scheme = url!.scheme, let action = url!.host else {
-                // some error
+            guard let url = URL(string: urlString),
+                  let scheme = url.scheme,
+                  let action = url.host
+            else {
                 return
             }
 
-            var list = url!.pathComponents.dropFirst()
+            var list = url.pathComponents.dropFirst()
             let task = list.popFirst()
             let colorFormat = list.popFirst()
 
             if scheme.caseInsensitiveCompare("pika") == .orderedSame {
-                if colorFormat != nil {
-                    if let format = ColorFormat.withLabel(colorFormat!) {
-                        Defaults[.colorFormat] = format
-                    }
+                if let colorFormat = colorFormat,
+                   let format = ColorFormat.withLabel(colorFormat)
+                {
+                    Defaults[.colorFormat] = format
                 }
 
                 if action == "format" {
-                    if let format = ColorFormat.withLabel(task!) {
+                    if let task = task, let format = ColorFormat.withLabel(task) {
                         Defaults[.colorFormat] = format
                     }
                 }

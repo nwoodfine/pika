@@ -5,7 +5,7 @@ import Security
 class PaletteSyncManager {
     private var store: NSUbiquitousKeyValueStore?
     private let key = "paletteText"
-    private var isApplyingCloudChange = false
+    private var lastCloudAppliedValue: String?
 
     private static var hasKVSEntitlement: Bool {
         guard let task = SecTaskCreateFromSelf(nil) else { return false }
@@ -30,12 +30,17 @@ class PaletteSyncManager {
             kvStore.synchronize()
 
             if let cloudValue = kvStore.string(forKey: key), Defaults[.paletteText].isEmpty {
+                lastCloudAppliedValue = cloudValue
                 Defaults[.paletteText] = cloudValue
             }
         }
 
         Defaults.observe(.paletteText) { [weak self] change in
-            guard let self = self, !self.isApplyingCloudChange else { return }
+            guard let self = self else { return }
+            if change.newValue == self.lastCloudAppliedValue {
+                self.lastCloudAppliedValue = nil
+                return
+            }
             self.store?.set(change.newValue, forKey: self.key)
         }.tieToLifetime(of: self)
     }
@@ -51,9 +56,10 @@ class PaletteSyncManager {
              NSUbiquitousKeyValueStoreInitialSyncChange,
              NSUbiquitousKeyValueStoreAccountChange:
             if let cloudValue = store.string(forKey: key) {
-                isApplyingCloudChange = true
+                if cloudValue != Defaults[.paletteText] {
+                    lastCloudAppliedValue = cloudValue
+                }
                 Defaults[.paletteText] = cloudValue
-                isApplyingCloudChange = false
             }
         case NSUbiquitousKeyValueStoreQuotaViolationChange:
             NSLog("PaletteSyncManager: iCloud KVS quota exceeded")

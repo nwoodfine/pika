@@ -46,8 +46,10 @@ enum PaletteParser {
         return PaletteColor(hex: hex, name: name)
     }
 
-    static func parse(_ text: String) -> [ColorPalette] {
-        var palettes: [ColorPalette] = []
+    private static func enumerateSections(
+        _ text: String,
+        handler: (_ name: String, _ colorsLine: String) -> Bool
+    ) {
         let lines = text.components(separatedBy: .newlines)
         var currentName: String?
 
@@ -63,22 +65,30 @@ enum PaletteParser {
             }
 
             if let name = currentName, !trimmed.isEmpty {
-                let colors = trimmed
-                    .components(separatedBy: ",")
-                    .compactMap { parseColorEntry($0) }
-                    .prefix(20)
-
-                if !colors.isEmpty {
-                    palettes.append(ColorPalette(
-                        id: name,
-                        name: name,
-                        colors: Array(colors)
-                    ))
-                }
                 currentName = nil
-
-                if palettes.count >= 5 { break }
+                let shouldStop = handler(name, trimmed)
+                if shouldStop { return }
             }
+        }
+    }
+
+    static func parse(_ text: String) -> [ColorPalette] {
+        var palettes: [ColorPalette] = []
+
+        enumerateSections(text) { name, colorsLine in
+            let colors = colorsLine
+                .components(separatedBy: ",")
+                .compactMap { parseColorEntry($0) }
+                .prefix(20)
+
+            if !colors.isEmpty {
+                palettes.append(ColorPalette(
+                    id: name,
+                    name: name,
+                    colors: Array(colors)
+                ))
+            }
+            return palettes.count >= 5
         }
 
         return palettes
@@ -86,30 +96,17 @@ enum PaletteParser {
 
     static func validate(_ text: String) -> String? {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        let lines = text.components(separatedBy: .newlines)
         var paletteCount = 0
-        var currentName: String?
         var maxColorsExceeded = false
 
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.hasPrefix("["), trimmed.hasSuffix("]") {
-                let name = String(trimmed.dropFirst().dropLast())
-                    .trimmingCharacters(in: .whitespaces)
-                if !name.isEmpty {
-                    currentName = name
-                }
-                continue
+        enumerateSections(text) { _, colorsLine in
+            paletteCount += 1
+            let colorCount = colorsLine.components(separatedBy: ",")
+                .compactMap { parseColorEntry($0) }.count
+            if colorCount > 20 {
+                maxColorsExceeded = true
             }
-            if currentName != nil, !trimmed.isEmpty {
-                paletteCount += 1
-                let colorCount = trimmed.components(separatedBy: ",")
-                    .compactMap { parseColorEntry($0) }.count
-                if colorCount > 20 {
-                    maxColorsExceeded = true
-                }
-                currentName = nil
-            }
+            return false
         }
 
         if paletteCount > 5 {

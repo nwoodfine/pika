@@ -45,6 +45,8 @@ class Eyedropper: ObservableObject {
         }
     }
 
+    private static var activePickerType: Types?
+
     let type: Types
     var forceShow = false
     weak var colorHistoryManager: ColorHistoryManager?
@@ -109,12 +111,14 @@ class Eyedropper: ObservableObject {
         panel.orderFrontRegardless()
         panel.setAction(#selector(colorDidChange))
         panel.isContinuous = true
+        Self.activePickerType = type
     }
 
     func togglePicker() {
         let panel = NSColorPanel.shared
-        if panel.isVisible, panel.title == "\(type.rawValue.capitalized)" {
+        if panel.isVisible, Self.activePickerType == type {
             panel.close()
+            Self.activePickerType = nil
         } else {
             picker()
         }
@@ -130,7 +134,7 @@ class Eyedropper: ObservableObject {
             NSApp.sendAction(#selector(AppDelegate.hidePika), to: nil, from: nil)
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now()) {
+        DispatchQueue.main.async {
             let sampler = NSColorSampler()
             sampler.show { selectedColor in
 

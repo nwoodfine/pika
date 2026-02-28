@@ -7,13 +7,20 @@ struct ContentView: View {
 
     @Default(.copyFormat) var copyFormat
     @Default(.colorFormat) var colorFormat
+    @Default(.paletteText) var paletteText
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     let pasteboard = NSPasteboard.general
+
+    var externalPalettes: [ColorPalette]?
 
     @State var swapVisible: Bool = false
     @State private var timerSubscription: Cancellable?
     @State private var timer = Timer.publish(every: 0.25, on: .main, in: .common)
     @State private var angle: Double = 0
+
+    private var palettes: [ColorPalette] {
+        externalPalettes ?? PaletteParser.parse(paletteText)
+    }
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 0) {
@@ -59,7 +66,7 @@ struct ContentView: View {
             Divider()
             Footer(foreground: eyedroppers.foreground, background: eyedroppers.background)
             ColorHistory()
-            ColorPalettes()
+            ColorPalettes(palettes: palettes)
         }
         .onAppear {
             if !eyedroppers.hasSetInitialBackground {
@@ -95,20 +102,31 @@ struct PopoverContentView: View {
     @Default(.colorHistory) var colorHistory
     @Default(.paletteText) var paletteText
 
-    var popoverHeight: CGFloat {
-        var height: CGFloat = 284
+    private enum Layout {
+        static let baseHeight: CGFloat = 284
+        static let historyBarHeight: CGFloat = 52
+        static let paletteRowHeight: CGFloat = 38
+        static let paletteGroupPadding: CGFloat = 6
+        static let maxPopoverHeight: CGFloat = 550
+    }
+
+    private var palettes: [ColorPalette] {
+        PaletteParser.parse(paletteText)
+    }
+
+    private func popoverHeight(paletteCount: Int) -> CGFloat {
+        var height = Layout.baseHeight
         if !colorHistory.isEmpty {
-            height += 52
+            height += Layout.historyBarHeight
         }
-        let paletteCount = PaletteParser.parse(paletteText)
-            .filter { !$0.colors.isEmpty }.count
         if paletteCount > 0 {
-            height += CGFloat(paletteCount) * 38 + 6
+            height += CGFloat(paletteCount) * Layout.paletteRowHeight + Layout.paletteGroupPadding
         }
-        return min(height, 550)
+        return min(height, Layout.maxPopoverHeight)
     }
 
     var body: some View {
+        let parsedPalettes = palettes
         VStack(spacing: 0) {
             HStack {
                 Spacer()
@@ -116,10 +134,10 @@ struct PopoverContentView: View {
             }
             .padding(.leading, 10)
             .padding(.vertical, 10)
-            ContentView()
+            ContentView(externalPalettes: parsedPalettes)
                 .environmentObject(eyedroppers)
         }
-        .frame(width: 480, height: popoverHeight)
+        .frame(width: 480, height: popoverHeight(paletteCount: parsedPalettes.count))
     }
 }
 
