@@ -82,6 +82,9 @@
 /* Hide menu bar icon */
 "preferences.icon.description" = "Hide menu bar icon";
 
+/* Open as window */
+"preferences.open.window" = "Open as window";
+
 /* Launch at login */
 "preferences.launch.description" = "Launch at login";
 

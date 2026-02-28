@@ -20,6 +20,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let paletteSyncManager = PaletteSyncManager()
 
     var undoManager = UndoManager()
+    var statusItem: NSStatusItem?
 
     override init() {
         super.init()
@@ -37,7 +38,74 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let notificationCenter = NotificationCenter.default
 
     var isMenubarMode: Bool {
-        Defaults[.appMode] == .menubar
+        Defaults[.appMode] == .menubar && !Defaults[.openAsWindow]
+    }
+
+    func setupStatusItem() {
+        let needsStatusItem = Defaults[.appMode] == .menubar
+            && Defaults[.openAsWindow]
+            && !Defaults[.hideMenuBarIcon]
+
+        if needsStatusItem {
+            if statusItem == nil {
+                statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+                if let button = statusItem?.button {
+                    button.image = NSImage(named: "StatusBarIcon")
+                    button.image?.isTemplate = true
+                    button.action = #selector(statusItemClicked)
+                    button.target = self
+                }
+            }
+        } else {
+            if let item = statusItem {
+                NSStatusBar.system.removeStatusItem(item)
+                statusItem = nil
+            }
+        }
+    }
+
+    @objc func statusItemClicked() {
+        toggleMainWindow()
+    }
+
+    func toggleMainWindow() {
+        if pikaWindow.isVisible {
+            pikaWindow.orderOut(nil)
+        } else {
+            pikaWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
+    /// Mirrors PopoverContentView.Layout — keeps window and popover heights in sync.
+    private func idealWindowContentHeight() -> CGFloat {
+        let baseHeight: CGFloat = 230
+        let swatchSectionHeight: CGFloat = 52
+        let maxHeight: CGFloat = 550
+
+        var height = baseHeight
+        if !Defaults[.colorHistory].isEmpty {
+            height += swatchSectionHeight
+        }
+        let palettes = PaletteParser.parse(Defaults[.paletteText])
+        height += CGFloat(palettes.count) * swatchSectionHeight
+        return min(height, maxHeight)
+    }
+
+    func updateWindowSize(animate: Bool) {
+        guard pikaWindow != nil else { return }
+        let contentHeight = idealWindowContentHeight()
+        let targetContent = NSRect(x: 0, y: 0, width: CGFloat(pikaWindow.frame.width), height: contentHeight)
+        let targetFrame = pikaWindow.frameRect(forContentRect: targetContent)
+        // Pin the top edge of the window.
+        let currentFrame = pikaWindow.frame
+        let newFrame = NSRect(
+            x: currentFrame.origin.x,
+            y: currentFrame.origin.y + currentFrame.size.height - targetFrame.height,
+            width: currentFrame.size.width,
+            height: targetFrame.height
+        )
+        pikaWindow.setFrame(newFrame, display: true, animate: animate && pikaWindow.isVisible)
     }
 
     func setupAppMode() {
@@ -89,6 +157,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
 
         setupAppMode()
+        setupStatusItem()
+
+        Defaults.observe(.openAsWindow) { [weak self] _ in
+            DispatchQueue.main.async { self?.setupStatusItem() }
+        }.tieToLifetime(of: self)
+
+        Defaults.observe(.hideMenuBarIcon) { [weak self] _ in
+            DispatchQueue.main.async { self?.setupStatusItem() }
+        }.tieToLifetime(of: self)
+
+        Defaults.observe(.appMode) { [weak self] _ in
+            DispatchQueue.main.async { self?.setupStatusItem() }
+        }.tieToLifetime(of: self)
 
         // Define content view
         let contentView = ContentView()
@@ -98,12 +179,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                    maxWidth: 650,
                    minHeight: 230,
                    idealHeight: 230,
-                   maxHeight: 446,
+                   maxHeight: 550,
                    alignment: .center)
 
         pikaWindow = PikaWindow.createPrimaryWindow()
         pikaWindow.contentView = NSHostingView(rootView: contentView)
         pikaTouchBarController = PikaTouchBarController(window: pikaWindow)
+
+        updateWindowSize(animate: false)
+
+        Defaults.observe(.paletteText) { [weak self] _ in
+            DispatchQueue.main.async { self?.updateWindowSize(animate: true) }
+        }.tieToLifetime(of: self)
+
+        Defaults.observe(.colorHistory) { [weak self] _ in
+            DispatchQueue.main.async { self?.updateWindowSize(animate: true) }
+        }.tieToLifetime(of: self)
 
         // Define global keyboard shortcuts
         KeyboardShortcuts.onKeyUp(for: .togglePika) { [] in
