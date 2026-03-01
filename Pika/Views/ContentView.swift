@@ -104,6 +104,15 @@ enum SwatchLayout {
     /// Height of a single swatch section (Divider + SwatchBar + padding).
     static let swatchSectionHeight: CGFloat = 52
     static let maxHeight: CGFloat = 550
+
+    static func totalHeight(base: CGFloat, hasHistory: Bool, paletteCount: Int) -> CGFloat {
+        var height = base
+        if hasHistory {
+            height += swatchSectionHeight
+        }
+        height += CGFloat(paletteCount) * swatchSectionHeight
+        return min(height, maxHeight)
+    }
 }
 
 struct PopoverContentView: View {
@@ -119,12 +128,11 @@ struct PopoverContentView: View {
     }
 
     private func popoverHeight(paletteCount: Int) -> CGFloat {
-        var height = Self.popoverBaseHeight
-        if !colorHistory.isEmpty {
-            height += SwatchLayout.swatchSectionHeight
-        }
-        height += CGFloat(paletteCount) * SwatchLayout.swatchSectionHeight
-        return min(height, SwatchLayout.maxHeight)
+        SwatchLayout.totalHeight(
+            base: Self.popoverBaseHeight,
+            hasHistory: !colorHistory.isEmpty,
+            paletteCount: paletteCount
+        )
     }
 
     var body: some View {

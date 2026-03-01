@@ -23,6 +23,8 @@ struct ColorPalette: Identifiable, Equatable {
 /// with optional `(label)` names. Supports all color formats: hex, rgb(), hsl(),
 /// hsb(), lab(), oklch(), rgba(). Example: `#FF6B35(Tangerine), oklch(80% 0.15 90)`
 enum PaletteParser {
+    static let maxColorsPerPalette = 20
+    static let maxPalettes = 5
     /// Splits a color line on commas that are outside parentheses, so that
     /// values like `rgb(255, 0, 0)` are kept intact.
     static func splitColorEntries(_ line: String) -> [String] {
@@ -56,12 +58,16 @@ enum PaletteParser {
     /// label as the parenthesized group that follows the function's closing paren.
     /// Distinguishes labels from function arguments by checking whether what
     /// precedes the trailing `(...)` is itself a valid color string.
-    private static func extractNameAndColorString(_ entry: String) -> (colorString: String, name: String?) {
+    /// Returns the color string, an optional label name, and the already-parsed
+    /// NSColor when a label was detected (to avoid double-parsing).
+    private static func extractNameAndColorString(
+        _ entry: String
+    ) -> (colorString: String, name: String?, validatedColor: NSColor?) {
         let trimmed = entry.trimmingCharacters(in: .whitespaces)
 
         // Walk backward: if the entry ends with `)`, check whether it's a trailing label.
         guard trimmed.hasSuffix(")") else {
-            return (trimmed, nil)
+            return (trimmed, nil, nil)
         }
 
         // Find the matching `(` for the final `)`.
@@ -79,34 +85,34 @@ enum PaletteParser {
         }
 
         guard let openIdx = labelOpenIndex else {
-            return (trimmed, nil)
+            return (trimmed, nil, nil)
         }
 
         let beforeLabel = trimmed[trimmed.startIndex ..< openIdx]
             .trimmingCharacters(in: .whitespaces)
 
         guard !beforeLabel.isEmpty else {
-            return (trimmed, nil)
+            return (trimmed, nil, nil)
         }
 
         // Only treat the trailing (...) as a name label if what precedes it
         // is a valid color. Otherwise the parens are the color function's own
         // arguments (e.g. `oklch(...)` with no label).
-        guard NSColor.fromColorString(beforeLabel) != nil else {
-            return (trimmed, nil)
+        guard let parsedColor = NSColor.fromColorString(beforeLabel) else {
+            return (trimmed, nil, nil)
         }
 
         let nameContent = String(trimmed[trimmed.index(after: openIdx) ..< trimmed.index(before: trimmed.endIndex)])
             .trimmingCharacters(in: .whitespaces)
 
         let name = nameContent.isEmpty ? nil : nameContent
-        return (beforeLabel, name)
+        return (beforeLabel, name, parsedColor)
     }
 
     static func parseColorEntry(_ entry: String) -> PaletteColor? {
-        let (colorString, name) = extractNameAndColorString(entry)
+        let (colorString, name, validatedColor) = extractNameAndColorString(entry)
 
-        guard let color = NSColor.fromColorString(colorString) else { return nil }
+        guard let color = validatedColor ?? NSColor.fromColorString(colorString) else { return nil }
         return PaletteColor(color: color, hex: color.toHexString(), name: name)
     }
 
@@ -138,13 +144,24 @@ enum PaletteParser {
         }
     }
 
+    /// Counts the number of palette sections without parsing any colors.
+    /// Used by AppDelegate for window sizing where only the count is needed.
+    static func countSections(_ text: String) -> Int {
+        var count = 0
+        enumerateSections(text) { _, _ in
+            count += 1
+            return count >= maxPalettes
+        }
+        return count
+    }
+
     static func parse(_ text: String) -> [ColorPalette] {
         var palettes: [ColorPalette] = []
 
         enumerateSections(text) { name, colorsLine in
             let colors = splitColorEntries(colorsLine)
                 .compactMap { parseColorEntry($0) }
-                .prefix(20)
+                .prefix(maxColorsPerPalette)
 
             if !colors.isEmpty {
                 // Index prefix ensures unique IDs when multiple palettes share a name.
@@ -154,7 +171,7 @@ enum PaletteParser {
                     colors: Array(colors)
                 ))
             }
-            return palettes.count >= 5
+            return palettes.count >= maxPalettes
         }
 
         return palettes
@@ -167,19 +184,18 @@ enum PaletteParser {
 
         enumerateSections(text) { _, colorsLine in
             paletteCount += 1
-            let colorCount = splitColorEntries(colorsLine)
-                .compactMap { parseColorEntry($0) }.count
-            if colorCount > 20 {
+            if splitColorEntries(colorsLine).count > maxColorsPerPalette {
                 maxColorsExceeded = true
             }
-            return false
+            // Stop early once we've seen enough to know both possible violations.
+            return paletteCount > maxPalettes && maxColorsExceeded
         }
 
-        if paletteCount > 5 {
-            return "Maximum 5 palettes"
+        if paletteCount > maxPalettes {
+            return "Maximum \(maxPalettes) palettes"
         }
         if maxColorsExceeded {
-            return "Maximum 20 colors per palette"
+            return "Maximum \(maxColorsPerPalette) colors per palette"
         }
         return nil
     }

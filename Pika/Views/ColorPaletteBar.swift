@@ -17,15 +17,7 @@ struct ColorPaletteBar: View {
                 )
             },
             onTap: { swatch in
-                eyedroppers.foreground.set(
-                    swatch.color,
-                    recordToHistory: false
-                )
-                NSApp.sendAction(
-                    #selector(AppDelegate.triggerCopyForeground),
-                    to: nil,
-                    from: nil
-                )
+                eyedroppers.foreground.applyFromSwatch(swatch.color)
             }
         )
     }

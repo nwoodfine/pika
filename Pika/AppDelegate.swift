@@ -80,14 +80,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func idealWindowContentHeight() -> CGFloat {
-        let baseHeight: CGFloat = 230
-
-        var height = baseHeight
-        if hadColorHistory {
-            height += SwatchLayout.swatchSectionHeight
-        }
-        height += CGFloat(cachedPaletteCount) * SwatchLayout.swatchSectionHeight
-        return min(height, SwatchLayout.maxHeight)
+        SwatchLayout.totalHeight(
+            base: 230,
+            hasHistory: hadColorHistory,
+            paletteCount: cachedPaletteCount
+        )
     }
 
     func updateWindowSize(animate: Bool) {
@@ -184,14 +181,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         pikaWindow.contentView = NSHostingView(rootView: contentView)
         pikaTouchBarController = PikaTouchBarController(window: pikaWindow)
 
-        cachedPaletteCount = PaletteParser.parse(Defaults[.paletteText]).count
+        cachedPaletteCount = PaletteParser.countSections(Defaults[.paletteText])
         hadColorHistory = !Defaults[.colorHistory].isEmpty
         updateWindowSize(animate: false)
 
         Defaults.observe(.paletteText) { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self = self else { return }
-                self.cachedPaletteCount = PaletteParser.parse(Defaults[.paletteText]).count
+                self.cachedPaletteCount = PaletteParser.countSections(Defaults[.paletteText])
                 self.updateWindowSize(animate: true)
             }
         }.tieToLifetime(of: self)

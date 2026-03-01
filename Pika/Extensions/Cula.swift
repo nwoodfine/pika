@@ -559,26 +559,29 @@ extension NSColor {
         return NSColor(red: r, green: g, blue: b, alpha: 1.0)
     }
 
-    /// Parses `hsl(H, S%, L%)` where H is 0–360, S and L are 0–100.
-    private static func parseHSLString(_ string: String) -> NSColor? {
+    /// Parses a three-component `func(H, S/S%, V/V%)` color string where
+    /// the first value is hue (0–360) and the second/third may be percentages.
+    private static func parseHSxString(
+        _ string: String,
+        make: (CGFloat, CGFloat, CGFloat) -> NSColor
+    ) -> NSColor? {
         guard let content = extractFunctionContent(string) else { return nil }
         let vals = extractValues(from: content)
         guard vals.count == 3 else { return nil }
         let h = vals[0].value / 360.0
         let s = vals[1].isPercentage ? vals[1].value / 100.0 : vals[1].value
-        let l = vals[2].isPercentage ? vals[2].value / 100.0 : vals[2].value
-        return colorFromHSL(h: h, s: s, l: l)
+        let v = vals[2].isPercentage ? vals[2].value / 100.0 : vals[2].value
+        return make(h, s, v)
+    }
+
+    /// Parses `hsl(H, S%, L%)` where H is 0–360, S and L are 0–100.
+    private static func parseHSLString(_ string: String) -> NSColor? {
+        parseHSxString(string) { h, s, l in colorFromHSL(h: h, s: s, l: l) }
     }
 
     /// Parses `hsb(H, S%, B%)` where H is 0–360, S and B are 0–100.
     private static func parseHSBString(_ string: String) -> NSColor? {
-        guard let content = extractFunctionContent(string) else { return nil }
-        let vals = extractValues(from: content)
-        guard vals.count == 3 else { return nil }
-        let h = vals[0].value / 360.0
-        let s = vals[1].isPercentage ? vals[1].value / 100.0 : vals[1].value
-        let b = vals[2].isPercentage ? vals[2].value / 100.0 : vals[2].value
-        return NSColor(hue: h, saturation: s, brightness: b, alpha: 1.0)
+        parseHSxString(string) { h, s, b in NSColor(hue: h, saturation: s, brightness: b, alpha: 1.0) }
     }
 
     /// Parses `lab(L A B)` (CSS Color Level 4) where L is 0–100, A and B are unbounded.
@@ -586,7 +589,7 @@ extension NSColor {
         guard let content = extractFunctionContent(string) else { return nil }
         let vals = extractValues(from: content)
         guard vals.count == 3 else { return nil }
-        let l = vals[0].isPercentage ? vals[0].value : vals[0].value
+        let l = vals[0].value
         let a = vals[1].value
         let b = vals[2].value
         return colorFromLAB(l: l, a: a, b: b)

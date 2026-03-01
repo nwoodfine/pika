@@ -5,6 +5,7 @@ import Defaults
 /// Two recording modes: immediate (eyedropper picks) and debounced (system color panel,
 /// which fires continuously as the user drags).
 class ColorHistoryManager {
+    static let maxEntries = 20
     private var debounceWorkItem: DispatchWorkItem?
 
     func recordImmediate(_ color: NSColor) {
@@ -29,8 +30,8 @@ class ColorHistoryManager {
             history.remove(at: index)
         }
         history.insert(hex, at: 0)
-        if history.count > 20 {
-            history = Array(history.prefix(20))
+        if history.count > Self.maxEntries {
+            history = Array(history.prefix(Self.maxEntries))
         }
         Defaults[.colorHistory] = history
     }

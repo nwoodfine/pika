@@ -6,7 +6,7 @@ import Security
 /// Degrades gracefully to local-only when the KVS entitlement is absent (e.g. dev builds).
 class PaletteSyncManager {
     private var store: NSUbiquitousKeyValueStore?
-    private let key = "paletteText"
+    private let key = Defaults.Keys.paletteText.name
 
     /// Token to break the cloud→Defaults→cloud feedback loop.
     /// Set before writing a cloud value into Defaults; consumed by the Defaults observer
