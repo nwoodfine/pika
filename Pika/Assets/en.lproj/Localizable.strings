@@ -82,6 +82,9 @@
 /* Hide menu bar icon */
 "preferences.icon.description" = "Hide menu bar icon";
 
+/* Open as window */
+"preferences.open.window" = "Open as window";
+
 /* Launch at login */
 "preferences.launch.description" = "Launch at login";
 
@@ -351,3 +354,12 @@
 
 /* Duration: */
 "preferences.overlay.duration" = "Duration";
+
+/* Color History */
+"color.history" = "Color History";
+
+/* Custom Color Palettes */
+"palette.title" = "Custom Color Palettes";
+
+/* Palette sync description */
+"palette.sync" = "Synced across all devices running Pika via iCloud";
